@@ -1,0 +1,31 @@
+User-agent: *
+Allow: /
+Disallow: /yonetim/
+Disallow: /yonetim
+Disallow: /admin/
+Disallow: /admin
+Disallow: /api/
+
+# Gereksiz parametre URL'lerini taramayı engelle
+Disallow: /*?*page=
+Disallow: /*?*offset=
+Disallow: /*?*limit=
+Disallow: /*?*utm_source=
+Disallow: /*?*ref=
+
+# Google bot için özel izinler
+User-agent: Googlebot
+Allow: /
+Disallow: /yonetim/
+Disallow: /api/
+Crawl-delay: 1
+
+# Bing bot için
+User-agent: Bingbot
+Allow: /
+Disallow: /yonetim/
+Disallow: /api/
+Crawl-delay: 2
+
+# Sitemap
+Sitemap: https://sinavsaatin.com/sitemap.xml

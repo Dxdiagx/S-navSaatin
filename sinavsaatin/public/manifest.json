@@ -1,0 +1,74 @@
+{
+  "id": "/",
+  "name": "SınavSaatin",
+  "short_name": "SınavSaatin",
+  "description": "ÖSYM sınav takvimi, MEB duyuruları, kamu personel alımları ve atama takvimleri. Türkiye'nin dijital eğitim ve kariyer rehberi.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#2563EB",
+  "theme_color": "#4F46E5",
+  "lang": "tr",
+  "dir": "ltr",
+  "categories": ["education", "news", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Sınav Takvimi",
+      "short_name": "Sınavlar",
+      "description": "ÖSYM sınav takvimini görüntüle",
+      "url": "/sinav-takvimi",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Haberler",
+      "short_name": "Haberler",
+      "description": "ÖSYM, MEB ve YÖK güncel duyuruları",
+      "url": "/haberler",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Personel Alımları",
+      "short_name": "Alımlar",
+      "description": "Güncel kamu personel alım ilanları",
+      "url": "/personel-alimlari",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Puan Hesaplama",
+      "short_name": "Hesapla",
+      "description": "YKS, KPSS ve LGS puan hesaplama",
+      "url": "/hesaplama",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/opengraph.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "SınavSaatin Ana Sayfa"
+    }
+  ]
+}

@@ -1,0 +1,458 @@
+/* SınavSaatin Yönetim - Mobile Responsive Patch v3.2 */
+
+/* ── Slide-in animation for mobile sidebar ── */
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.slide-in { animation: slideIn 0.2s ease-out; }
+
+/* ── Table responsiveness ── */
+@media (max-width: 1023px) {
+  /* Wrap all tables in scrollable containers */
+  .rounded-md.border,
+  [class*="rounded"][class*="border"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    min-width: 560px;
+  }
+}
+
+/* ── Small screen layout fixes ── */
+@media (max-width: 767px) {
+  /* Page padding */
+  .p-6 { padding: 0.875rem !important; }
+  .p-8 { padding: 1rem !important; }
+  .px-6 { padding-left: 0.875rem !important; padding-right: 0.875rem !important; }
+  .px-8 { padding-left: 1rem !important; padding-right: 1rem !important; }
+
+  /* 2 and 3 col grids → single col */
+  .grid-cols-2:not([class*="sm:grid-cols"]),
+  .grid-cols-3:not([class*="sm:grid-cols"]),
+  .grid-cols-4:not([class*="sm:grid-cols"]) {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Stats mini-grid: keep 2 cols on mobile */
+  .grid.gap-4.md\:grid-cols-2,
+  .grid.gap-4.md\:grid-cols-3,
+  .grid.gap-4.md\:grid-cols-4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Max-width resets so forms fill screen */
+  .max-w-2xl,
+  .max-w-xl,
+  .max-w-lg { max-width: 100% !important; }
+
+  /* Inputs / textareas full width */
+  input[type="text"],
+  input[type="email"],
+  input[type="url"],
+  input[type="search"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Dialog / sheet full width on phones */
+  [role="dialog"] {
+    max-width: 95vw !important;
+    margin: 0 auto !important;
+  }
+
+  /* Flex rows that should wrap */
+  .flex.items-center.justify-between { flex-wrap: wrap; gap: 0.5rem; }
+  .flex.gap-2 { flex-wrap: wrap; }
+  .flex.space-x-2 > * { margin-left: 0 !important; }
+
+  /* Buttons */
+  button.w-full { width: 100% !important; }
+
+  /* Push notification form: stack fields */
+  .space-y-4 > div,
+  .space-y-4 > label { display: block; width: 100%; }
+
+  /* Header title size */
+  h1.text-2xl { font-size: 1.3rem !important; }
+  h1.text-3xl { font-size: 1.4rem !important; }
+
+  /* Card content padding */
+  .card-content,
+  [class*="CardContent"] { padding: 0.75rem !important; }
+
+  /* Tab list wrapping */
+  [role="tablist"] {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-wrap: nowrap;
+  }
+  [role="tab"] { flex-shrink: 0; font-size: 0.8rem; padding: 0.4rem 0.6rem; }
+
+  /* Pagination */
+  nav[aria-label="pagination"] { flex-wrap: wrap; justify-content: center; gap: 0.25rem; }
+
+  /* Badge overflow */
+  .truncate { max-width: 120px; }
+}
+
+/* ── Extra small screens ── */
+@media (max-width: 400px) {
+  .grid.gap-4 { grid-template-columns: 1fr !important; }
+  th, td { font-size: 0.75rem !important; padding: 0.4rem 0.5rem !important; }
+  .text-sm { font-size: 0.75rem !important; }
+  h1.text-2xl, h1.text-3xl { font-size: 1.1rem !important; }
+}
+
+/* ── Mobile header (hamburger bar) polish ── */
+@media (max-width: 1023px) {
+  /* header is lg:hidden — already correct */
+  header.lg\:hidden {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: hsl(var(--background));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  /* Main scrollable area */
+  .flex-1.flex.flex-col.min-w-0.overflow-hidden {
+    overflow-y: auto !important;
+    height: 100vh;
+  }
+}
+
+
+  /* ═══════════════════════════════════════════════════
+     SınavSaatin — Toast Bildirim Tasarımı v3.9
+     Sonner toast override — tüm tipler
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Toaster container ── */
+  [data-sonner-toaster] {
+    --width: 340px !important;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+  }
+
+  /* ── Base toast ── */
+  [data-sonner-toast][data-styled=true] {
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow:
+      0 4px 6px -1px rgba(0,0,0,.07),
+      0 10px 30px -5px rgba(0,0,0,.13),
+      0 0 0 1px rgba(0,0,0,.05) !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    gap: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    width: var(--width) !important;
+    font-size: 13.5px !important;
+    font-weight: 450 !important;
+  }
+
+  /* ── Renkli sol şerit (accent bar) ── */
+  [data-sonner-toast][data-styled=true]::before {
+    content: '';
+    display: block;
+    width: 5px;
+    min-height: 100%;
+    flex-shrink: 0;
+    background: #d1d5db;
+    border-radius: 14px 0 0 14px;
+  }
+
+  [data-sonner-toast][data-type=success][data-styled=true]::before {
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  }
+
+  [data-sonner-toast][data-type=error][data-styled=true]::before {
+    background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+  }
+
+  [data-sonner-toast][data-type=warning][data-styled=true]::before {
+    background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  }
+
+  [data-sonner-toast][data-type=info][data-styled=true]::before,
+  [data-sonner-toast][data-type=loading][data-styled=true]::before {
+    background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  }
+
+  /* ── İçerik alanı ── */
+  [data-sonner-toast][data-styled=true] > *:not(:first-child) {
+    padding: 13px 14px 13px 12px !important;
+    flex: 1 !important;
+  }
+
+  /* ── Başlık metni ── */
+  [data-sonner-toast][data-styled=true] [data-title] {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    line-height: 1.4 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  /* ── Açıklama metni ── */
+  [data-sonner-toast][data-styled=true] [data-description] {
+    font-size: 12.5px !important;
+    font-weight: 400 !important;
+    color: #6b7280 !important;
+    margin-top: 2px !important;
+    line-height: 1.45 !important;
+  }
+
+  /* ── İkon ── */
+  [data-sonner-toast][data-styled=true] [data-icon] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  [data-sonner-toast][data-type=success] [data-icon] svg { color: #16a34a !important; }
+  [data-sonner-toast][data-type=error] [data-icon] svg   { color: #dc2626 !important; }
+  [data-sonner-toast][data-type=warning] [data-icon] svg { color: #d97706 !important; }
+  [data-sonner-toast][data-type=info] [data-icon] svg    { color: #2563eb !important; }
+
+  /* ── Kapatma butonu ── */
+  [data-sonner-toast][data-styled=true] [data-close-button] {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 50% !important;
+    background: #f3f4f6 !important;
+    border: none !important;
+    color: #9ca3af !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    opacity: 0.7 !important;
+    transition: opacity .15s, background .15s !important;
+    box-shadow: none !important;
+  }
+
+  [data-sonner-toast][data-styled=true] [data-close-button]:hover {
+    opacity: 1 !important;
+    background: #e5e7eb !important;
+  }
+
+  /* ── Dark mode desteği ── */
+  [data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-styled=true] {
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+    box-shadow:
+      0 4px 6px -1px rgba(0,0,0,.3),
+      0 10px 30px -5px rgba(0,0,0,.4),
+      0 0 0 1px rgba(255,255,255,.06) !important;
+  }
+
+  [data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-styled=true] [data-title] {
+    color: #f8fafc !important;
+  }
+
+  [data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-styled=true] [data-description] {
+    color: #94a3b8 !important;
+  }
+
+  [data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-styled=true] [data-close-button] {
+    background: #334155 !important;
+    color: #94a3b8 !important;
+  }
+
+  /* ── Giriş / çıkış animasyonu ── */
+  @keyframes toast-slide-in {
+    from { opacity: 0; transform: translateX(110%); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes toast-slide-out {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(110%); }
+  }
+
+  [data-sonner-toast][data-mounted=true][data-styled=true] {
+    animation: toast-slide-in 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) !important;
+  }
+
+  [data-sonner-toast][data-removed=true][data-styled=true] {
+    animation: toast-slide-out 0.25s ease-in forwards !important;
+  }
+  
+
+  /* ═══════════════════════════════════════════════════
+     SınavSaatin Yönetim — Buton Animasyonları v3.10
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Tüm shadcn butonlara geçiş ekle ── */
+  [class*="min-h-"][class*="px-"],
+  button[class*="rounded"],
+  .inline-flex.items-center.justify-center {
+    transition:
+      background-color 160ms cubic-bezier(.4,0,.2,1),
+      color 160ms cubic-bezier(.4,0,.2,1),
+      border-color 160ms cubic-bezier(.4,0,.2,1),
+      opacity 160ms cubic-bezier(.4,0,.2,1),
+      box-shadow 160ms cubic-bezier(.4,0,.2,1),
+      transform 100ms cubic-bezier(.4,0,.2,1) !important;
+  }
+
+  /* ── Basma (press) animasyonu ── */
+  [class*="min-h-"][class*="px-"]:not(:disabled):active,
+  button[class*="rounded"]:not(:disabled):active {
+    transform: scale(0.96) !important;
+    transition-duration: 80ms !important;
+  }
+
+  /* ── Icon butonları ── */
+  button[class*="h-9"][class*="w-9"]:not(:disabled):active,
+  button[class*="h-8"][class*="w-8"]:not(:disabled):active {
+    transform: scale(0.90) !important;
+  }
+
+  /* ── Hover parlaklık ── */
+  [class*="min-h-"][class*="px-"]:not(:disabled):hover {
+    filter: brightness(1.07);
+  }
+
+  /* ── Ghost ve outline: hover bg transition ── */
+  [class*="border-transparent"]:hover,
+  [class*="border-secondary"]:hover {
+    background-color: hsl(var(--muted) / 0.6) !important;
+    transition-duration: 120ms !important;
+  }
+
+  /* ── Devre dışı butonlar ── */
+  [class*="min-h-"][class*="px-"]:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* ── Native select stillemesi ── */
+  select.flex.h-9 {
+    cursor: pointer;
+    appearance: auto;
+  }
+  
+
+  /* ═══════════════════════════════════════════════════
+     SınavSaatin Yönetim — UX Geliştirmeleri v3.50
+  ═══════════════════════════════════════════════════ */
+
+  /* ── Injected tab buttons (⏱ Scheduler, Promptlar) match shadcn style ── */
+  #__ss_sched_tab__, #__ss_prompt_tab__ {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Tablist scrollable on narrow screens ── */
+  @media (max-width: 900px) {
+    [role="tablist"] {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none;
+      gap: 2px;
+    }
+    [role="tablist"]::-webkit-scrollbar { display: none; }
+    [role="tab"] {
+      flex-shrink: 0 !important;
+      font-size: 0.78rem !important;
+      padding: 0.35rem 0.65rem !important;
+    }
+  }
+
+  /* ── Scheduler inner grids responsive ── */
+  @media (max-width: 700px) {
+    /* Queue+Concurrency 2-col → 1-col */
+    #__ss_sched_inner__ > div[style*="grid-template-columns:1fr 1fr"] {
+      grid-template-columns: 1fr !important;
+    }
+    /* Stats flex cards wrap to 2 per row */
+    #__ss_sched_inner__ > div[style*="display:flex"][style*="flex-wrap:wrap"] > div {
+      flex: 1 1 calc(50% - 6px) !important;
+      min-width: 120px !important;
+    }
+  }
+
+  /* ── Sidebar: collapse to icon-only on tablet without hamburger ── */
+  @media (min-width: 1024px) {
+    aside[class*="w-60"], .lg\\:w-60 { min-width: 200px; }
+  }
+
+  /* ── Better focus rings throughout ── */
+  [role="tab"]:focus-visible,
+  button:focus-visible {
+    outline: 2px solid hsl(var(--ring)) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* ── Card hover lift for clickable cards ── */
+  [class*="cursor-pointer"][class*="rounded"] {
+    transition: box-shadow 150ms ease, transform 100ms ease !important;
+  }
+  [class*="cursor-pointer"][class*="rounded"]:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.08) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  /* ── Table: sticky header on long tables ── */
+  @media (min-width: 768px) {
+    .rounded-md.border table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: hsl(var(--background));
+      box-shadow: 0 1px 0 hsl(var(--border));
+    }
+  }
+
+  /* ── Search/filter bar: full width on mobile ── */
+  @media (max-width: 640px) {
+    [class*="flex"][class*="items-center"] > input[type="search"],
+    [class*="flex"][class*="items-center"] > input[type="text"] {
+      flex: 1 1 100% !important;
+      min-width: 0 !important;
+    }
+  }
+
+  /* ── Pagination: hide prev/next text, keep icons on xs ── */
+  @media (max-width: 480px) {
+    [aria-label="Go to previous page"] > span,
+    [aria-label="Go to next page"] > span { display: none; }
+  }
+
+  /* ── Empty state illustrations center nicely ── */
+  .flex.flex-col.items-center.justify-center[class*="py"] {
+    text-align: center;
+  }
+
+  /* ── Promptlar panel: textarea comfortable height ── */
+  #__ss_prompt_panel__ textarea {
+    min-height: 180px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+

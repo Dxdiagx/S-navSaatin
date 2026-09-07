@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>SınavSaatin Yönetim Paneli</title>
+    <meta name="description" content="SınavSaatin Yönetim Paneli — built on Replit. Update this description to reflect the app." />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta property="og:title" content="SınavSaatin Yönetim Paneli" />
+    <meta property="og:description" content="SınavSaatin Yönetim Paneli — Sadece yetkililer için." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SınavSaatin Yönetim Paneli" />
+    <meta name="twitter:description" content="SınavSaatin Yönetim Paneli — Sadece yetkililer için." />
+    <link rel="icon" type="image/svg+xml" href="/yonetim/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/yonetim/assets/index-v314.js"></script>
+    <link rel="stylesheet" crossorigin href="/yonetim/assets/index-v314.css">
+    <link rel="stylesheet" href="/yonetim/patch-v312.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script>
+(function () {
+  'use strict';
+
+  var BTN_ID   = '__ss_prompt_tab__';
+  var PANEL_ID = '__ss_prompt_panel__';
+
+  /* helpers */
+  function token() { return sessionStorage.getItem('admin_token') || ''; }
+
+  function apiFetch(url, opts) {
+    opts = opts || {};
+    return fetch(url, Object.assign({}, opts, {
+      headers: Object.assign({ 'x-admin-token': token(), 'Content-Type': 'application/json' }, opts.headers || {})
+    })).then(function (r) { return r.json(); });
+  }
+
+  function esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function toast(msg, ok) {
+    var el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:opacity .3s;color:#fff;background:' + (ok ? '#22c55e' : '#ef4444');
+    document.body.appendChild(el);
+    setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 320); }, 2600);
+  }
+
+  window.__ssSave__ = function (key) {
+    var ta = document.getElementById('__ss_ta_' + key);
+    if (!ta) return;
+    apiFetch('/api/admin/prompts/' + key, { method: 'PUT', body: JSON.stringify({ value: ta.value }) })
+      .then(function (r) {
+        if (r.success) { toast('Kaydedildi ✓', true); setTimeout(renderPrompts, 400); }
+        else toast(r.error || 'Hata', false);
+      }).catch(function () { toast('Bağlantı hatası', false); });
+  };
+
+  window.__ssReset__ = function (key) {
+    if (!confirm('Bu prompt varsayılana dönecek. Emin misiniz?')) return;
+    apiFetch('/api/admin/prompts/' + key + '/reset', { method: 'POST' })
+      .then(function (r) {
+        if (r.success) { toast('Varsayılana döndürüldü ✓', true); setTimeout(renderPrompts, 400); }
+        else toast(r.error || 'Hata', false);
+      }).catch(function () { toast('Hata', false); });
+  };
+
+  window.__ssSaveModel__ = function () {
+    var sel = document.getElementById('__ss_model_sel__');
+    if (!sel) return;
+    apiFetch('/api/admin/ai-config', { method: 'PUT', body: JSON.stringify({ model: sel.value }) })
+      .then(function (r) {
+        if (r.success) toast('Model kaydedildi ✓', true);
+        else toast(r.error || 'Geçersiz model adı', false);
+      }).catch(function () { toast('Hata', false); });
+  };
+
+  function renderPrompts() {
+    var content = document.getElementById('__ss_content__');
+    var loading = document.getElementById('__ss_loading__');
+    if (!content) return;
+
+    Promise.all([
+      apiFetch('/api/admin/prompts'),
+      apiFetch('/api/admin/ai-config')
+    ]).then(function (results) {
+      var pData = results[0];
+      var aiData = results[1];
+      var prompts = (pData && pData.prompts) ? pData.prompts : [];
+      var currentModel = (aiData && aiData.model) ? aiData.model : 'gemini-2.0-flash';
+      var availableModels = (aiData && aiData.available_models) ? aiData.available_models : ['gemini-2.0-flash','gemini-2.5-flash','gemini-1.5-flash'];
+
+      if (loading) loading.style.display = 'none';
+      content.style.display = 'block';
+
+      var modelHtml = '<div style="margin-bottom:24px;padding:16px;border:1px solid hsl(var(--border));border-radius:8px;background:hsl(var(--card));color:hsl(var(--card-foreground))">'
+        + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:180px"><p style="margin:0;font-size:13px;font-weight:600">Gemini Modeli</p>'
+        + '<p style="margin:4px 0 0;font-size:12px;color:hsl(var(--muted-foreground))">Tüm yapay zeka işlemleri için kullanılır</p></div>'
+        + '<div style="display:flex;gap:8px;align-items:center">'
+        + '<select id="__ss_model_sel__" style="padding:6px 10px;border:1px solid hsl(var(--border));border-radius:6px;background:hsl(var(--background));color:hsl(var(--foreground));font-size:13px;cursor:pointer">'
+        + availableModels.map(function (m) {
+            return '<option value="' + esc(m) + '"' + (m === currentModel ? ' selected' : '') + '>' + esc(m) + '</option>';
+          }).join('')
+        + '</select>'
+        + '<button onclick="__ssSaveModel__()" style="padding:6px 14px;font-size:12px;font-weight:500;border-radius:6px;border:none;background:hsl(var(--primary));color:hsl(var(--primary-foreground));cursor:pointer">Kaydet</button>'
+        + '</div></div></div>';
+
+      var promptsHtml = prompts.map(function (p) {
+        var badge = p.is_customized
+          ? '<span style="font-size:11px;padding:2px 8px;border-radius:9999px;background:rgba(34,197,94,.15);color:#16a34a">✏ Özelleştirilmiş</span>'
+          : '<span style="font-size:11px;padding:2px 8px;border-radius:9999px;background:hsl(var(--muted));color:hsl(var(--muted-foreground))">Varsayılan</span>';
+
+        var placeholders = (p.placeholders && p.placeholders.length)
+          ? '<div style="margin-top:6px">' + p.placeholders.map(function (ph) {
+              return '<code style="font-size:11px;background:hsl(var(--muted));padding:2px 6px;border-radius:4px;margin-right:4px;display:inline-block;margin-bottom:4px">' + esc(ph) + '</code>';
+            }).join('') + '</div>'
+          : '';
+
+        var resetBtn = p.is_customized
+          ? '<button onclick="__ssReset__(\'' + p.key + '\')" style="padding:6px 14px;font-size:12px;border-radius:6px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));cursor:pointer">Varsayılana Dön</button>'
+          : '';
+
+        return '<div style="margin-bottom:20px;border:1px solid hsl(var(--border));border-radius:8px;padding:16px;background:hsl(var(--card));color:hsl(var(--card-foreground))">'
+          + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">'
+          + '<div><h3 style="margin:0;font-size:14px;font-weight:600">' + esc(p.label) + '</h3>'
+          + '<p style="margin:3px 0 0;font-size:12px;color:hsl(var(--muted-foreground))">' + esc(p.description) + '</p>'
+          + placeholders + '</div>' + badge + '</div>'
+          + '<textarea id="__ss_ta_' + p.key + '" rows="8" style="width:100%;padding:10px;border:1px solid hsl(var(--border));border-radius:6px;background:hsl(var(--background));color:hsl(var(--foreground));font-size:12px;font-family:ui-monospace,monospace;resize:vertical;box-sizing:border-box;line-height:1.55">' + esc(p.current_value) + '</textarea>'
+          + '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">' + resetBtn
+          + '<button onclick="__ssSave__(\'' + p.key + '\')" style="padding:6px 16px;font-size:12px;font-weight:500;border-radius:6px;border:none;background:hsl(var(--primary));color:hsl(var(--primary-foreground));cursor:pointer">Kaydet</button>'
+          + '</div></div>';
+      }).join('');
+
+      content.innerHTML = modelHtml + promptsHtml;
+    }).catch(function () {
+      if (loading) loading.textContent = 'Yükleme hatası — sayfayı yenileyin.';
+    });
+  }
+
+  function buildPanel() {
+    var div = document.createElement('div');
+    div.id = PANEL_ID;
+    div.setAttribute('role', 'tabpanel');
+    div.style.display = 'none';
+    div.innerHTML = '<div style="margin-top:8px">'
+      + '<div id="__ss_loading__" style="padding:48px;text-align:center;color:hsl(var(--muted-foreground));font-size:14px">Yükleniyor…</div>'
+      + '<div id="__ss_content__" style="display:none"></div>'
+      + '</div>';
+    return div;
+  }
+
+  function activate() {
+    document.querySelectorAll('[role="tablist"] [role="tab"]').forEach(function (b) {
+      if (b.id !== BTN_ID) b.setAttribute('data-state', 'inactive');
+    });
+    var btn = document.getElementById(BTN_ID);
+    if (btn) btn.setAttribute('data-state', 'active');
+    document.querySelectorAll('[role="tabpanel"]').forEach(function (p) {
+      if (p.id !== PANEL_ID) p.style.display = 'none';
+    });
+    var panel = document.getElementById(PANEL_ID);
+    if (panel) { panel.style.display = 'block'; renderPrompts(); }
+  }
+
+  function deactivate() {
+    var btn = document.getElementById(BTN_ID);
+    if (btn) btn.setAttribute('data-state', 'inactive');
+    var panel = document.getElementById(PANEL_ID);
+    if (panel) panel.style.display = 'none';
+    document.querySelectorAll('[role="tabpanel"]').forEach(function (p) {
+      if (p.id !== PANEL_ID) p.style.display = '';
+    });
+  }
+
+  function inject(tabList) {
+    if (document.getElementById(BTN_ID)) return;
+    var refBtn = tabList.querySelector('[role="tab"]');
+    var btnClass = refBtn ? refBtn.className : '';
+    var btn = document.createElement('button');
+    btn.id   = BTN_ID;
+    btn.type = 'button';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('data-state', 'inactive');
+    btn.className   = btnClass;
+    btn.textContent = '🤖 Promptlar';
+    btn.addEventListener('click', activate);
+    tabList.appendChild(btn);
+    var tabsRoot = tabList.parentElement && tabList.parentElement.parentElement;
+    if (tabsRoot) tabsRoot.appendChild(buildPanel());
+    tabList.querySelectorAll('[role="tab"]').forEach(function (realBtn) {
+      if (realBtn.id !== BTN_ID) realBtn.addEventListener('click', deactivate);
+    });
+  }
+
+  function tryInjectPrompt() {
+    var tl = document.querySelector('[role="tablist"]');
+    if (!tl) return;
+    if (!document.getElementById(BTN_ID)) inject(tl);
+    if (!document.getElementById(PANEL_ID)) {
+      var tabsRoot = tl.parentElement && tl.parentElement.parentElement;
+      if (tabsRoot) tabsRoot.appendChild(buildPanel());
+    }
+  }
+
+  var observer = new MutationObserver(function () { tryInjectPrompt(); });
+
+  function startObserving() {
+    observer.observe(document.body, { childList: true, subtree: true });
+    setTimeout(tryInjectPrompt, 150);
+    var _t = setInterval(tryInjectPrompt, 600);
+    setTimeout(function() { clearInterval(_t); setInterval(tryInjectPrompt, 5000); }, 60000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startObserving);
+  } else {
+    startObserving();
+  }
+})();
+</script>
+  
+<script>
+(function () {
+  'use strict';
+  var BTN_ID   = '__ss_sched_tab__';
+  var PANEL_ID = '__ss_sched_panel__';
+  var PROMPT_BTN_ID = '__ss_prompt_tab__';
+  var _refreshTimer = null;
+
+  function token() { return sessionStorage.getItem('admin_token') || ''; }
+  function apiFetch(url, opts) {
+    opts = opts || {};
+    return fetch(url, Object.assign({}, opts, {
+      headers: Object.assign({ 'x-admin-token': token(), 'Content-Type': 'application/json' }, opts.headers || {})
+    })).then(function (r) { return r.json(); });
+  }
+  function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function toast(msg, ok) {
+    var el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:opacity .3s;color:#fff;background:' + (ok ? '#22c55e' : '#ef4444');
+    document.body.appendChild(el);
+    setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 320); }, 2800);
+  }
+
+  function fmt(iso) {
+    if (!iso) return '—';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch(e) { return iso; }
+  }
+  function fmtNext(iso) {
+    if (!iso) return '—';
+    try {
+      var diff = new Date(iso) - Date.now();
+      if (diff < 0) return 'yakında';
+      var h = Math.floor(diff / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      if (h > 0)  return h + 's ' + m + 'dk';
+      if (m > 0)  return m + 'dk ' + s + 'sn';
+      return s + 'sn';
+    } catch(e) { return iso; }
+  }
+
+  var JOB_LABELS = {
+    haberler: 'Haberler', personel: 'Personel Alımları', atamalar: 'Atamalar',
+    sinav_takvimi: 'Sınav Takvimi', cleanup_appointments: 'Temizlik – Atamalar',
+    cleanup_jobs: 'Temizlik – İlanlar', cron_log_cleanup: 'Log Temizliği'
+  };
+  var TRIGGERABLE = ['haberler','personel','atamalar','sinav_takvimi'];
+
+  function statusBadge(running, pending, status) {
+    if (running) return '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(34,197,94,.15);color:#16a34a"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:__ss_pulse 1.4s infinite"></span>Çalışıyor</span>';
+    if (pending)  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(234,179,8,.15);color:#ca8a04"><span style="width:6px;height:6px;border-radius:50%;background:#eab308"></span>Kuyrukta</span>';
+    if (status === 'success') return '<span style="padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(34,197,94,.1);color:#16a34a">Başarılı</span>';
+    if (status === 'error')   return '<span style="padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(239,68,68,.1);color:#dc2626">Hata</span>';
+    return '<span style="padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600;background:hsl(var(--muted));color:hsl(var(--muted-foreground))">Bekliyor</span>';
+  }
+
+  function card(title, value, sub, color) {
+    var bg = color === 'green' ? 'rgba(34,197,94,.08)' : color === 'yellow' ? 'rgba(234,179,8,.08)' : color === 'red' ? 'rgba(239,68,68,.08)' : 'hsl(var(--card))';
+    var vc = color === 'green' ? '#16a34a' : color === 'yellow' ? '#ca8a04' : color === 'red' ? '#dc2626' : 'hsl(var(--foreground))';
+    return '<div style="flex:1;min-width:140px;padding:16px 20px;border:1px solid hsl(var(--border));border-radius:10px;background:' + bg + '">'
+      + '<p style="margin:0;font-size:12px;color:hsl(var(--muted-foreground))">' + esc(title) + '</p>'
+      + '<p style="margin:6px 0 0;font-size:28px;font-weight:700;color:' + vc + '">' + esc(String(value)) + '</p>'
+      + (sub ? '<p style="margin:3px 0 0;font-size:11px;color:hsl(var(--muted-foreground))">' + esc(sub) + '</p>' : '')
+      + '</div>';
+  }
+
+  function concurrencyRow(label, cc) {
+    var active = cc.active || 0, queued = cc.queued || 0, limit = cc.limit || 1;
+    var pct = Math.min(100, Math.round(active / limit * 100));
+    var barColor = pct > 80 ? '#ef4444' : pct > 50 ? '#eab308' : '#22c55e';
+    return '<div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      + '<span style="font-size:12px;font-weight:500">' + esc(label) + '</span>'
+      + '<span style="font-size:12px;color:hsl(var(--muted-foreground))">' + active + ' aktif / ' + limit + ' limit' + (queued ? ' · ' + queued + ' bekliyor' : '') + '</span>'
+      + '</div>'
+      + '<div style="height:8px;border-radius:4px;background:hsl(var(--muted));overflow:hidden">'
+      + '<div style="height:100%;width:' + pct + '%;border-radius:4px;background:' + barColor + ';transition:width .3s"></div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function renderScheduler() {
+    var panel = document.getElementById(PANEL_ID);
+    if (!panel || panel.style.display === 'none') return;
+    var inner = document.getElementById('__ss_sched_inner__');
+    if (!inner) return;
+
+    apiFetch('/api/admin/scheduler/status').then(function (data) {
+      if (!data || data.error) {
+        inner.innerHTML = '<p style="color:#ef4444;padding:20px">Veri alınamadı: ' + esc((data || {}).error || 'Hata') + '</p>';
+        return;
+      }
+      var s = data.stats24h || {}, q = data.queue || {}, cc = data.concurrency || {}, jobs = data.jobs || {}, now = new Date();
+
+      /* ── Stats cards ── */
+      var statsHtml = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">'
+        + card('İşlenen (24s)',    s.processed  || 0, 'kayıt analiz edildi', '')
+        + card('Kaydedilen (24s)', s.saved      || 0, 'yeni kayıt', 'green')
+        + card('Duplicate (24s)', s.duplicates  || 0, 'atlandı', 'yellow')
+        + card('Hata (24s)',      s.errors      || 0, 'başarısız çalışma', s.errors > 0 ? 'red' : '')
+        + '</div>';
+
+      /* ── Jobs table ── */
+      var jobRows = Object.keys(jobs).map(function(name) {
+        var j = jobs[name];
+        var isTriggerable = TRIGGERABLE.indexOf(name) !== -1;
+        var label = JOB_LABELS[name] || name;
+        var badge = statusBadge(j.running, j.pending, j.lastStatus);
+        var runBtn = isTriggerable
+          ? '<button onclick="__ssSchedRun__(\'' + name + '\')" style="padding:4px 12px;font-size:11px;font-weight:500;border-radius:6px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));cursor:pointer;white-space:nowrap">▶ Çalıştır</button>'
+          : '';
+        var msgCell = j.lastMessage
+          ? '<span title="' + esc(j.lastMessage) + '" style="cursor:help;max-width:180px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(j.lastMessage.substring(0, 40)) + (j.lastMessage.length > 40 ? '…' : '') + '</span>'
+          : '—';
+        return '<tr style="border-top:1px solid hsl(var(--border))">'
+          + '<td style="padding:10px 8px;font-size:13px;font-weight:500;white-space:nowrap">' + esc(label) + '</td>'
+          + '<td style="padding:10px 8px;text-align:center">' + badge + '</td>'
+          + '<td style="padding:10px 8px;font-size:12px;color:hsl(var(--muted-foreground));white-space:nowrap">' + fmt(j.lastRun) + '</td>'
+          + '<td style="padding:10px 8px;font-size:12px;color:hsl(var(--muted-foreground));white-space:nowrap">' + fmt(j.lastFinished) + '</td>'
+          + '<td style="padding:10px 8px;font-size:12px">' + msgCell + '</td>'
+          + '<td style="padding:10px 8px;font-size:12px;white-space:nowrap"><b>' + fmtNext(j.nextRun) + '</b></td>'
+          + '<td style="padding:10px 8px;font-size:12px;color:hsl(var(--muted-foreground));white-space:nowrap">' + (j.intervalHours != null ? j.intervalHours + 'h' : '—') + '</td>'
+          + '<td style="padding:10px 8px">' + runBtn + '</td>'
+          + '</tr>';
+      }).join('');
+
+      var jobsHtml = '<div style="margin-bottom:20px;border:1px solid hsl(var(--border));border-radius:10px;overflow:hidden">'
+        + '<div style="padding:14px 16px;background:hsl(var(--card));border-bottom:1px solid hsl(var(--border));display:flex;align-items:center;justify-content:space-between">'
+        + '<h3 style="margin:0;font-size:14px;font-weight:600">Job Durumları</h3>'
+        + '<span style="font-size:11px;color:hsl(var(--muted-foreground))">Son güncelleme: ' + now.toLocaleTimeString('tr-TR') + '</span>'
+        + '</div>'
+        + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:hsl(var(--card))">'
+        + '<thead><tr style="background:hsl(var(--muted))">'
+        + '<th style="padding:8px;text-align:left;font-size:12px;font-weight:600">Job</th>'
+        + '<th style="padding:8px;text-align:center;font-size:12px;font-weight:600">Durum</th>'
+        + '<th style="padding:8px;text-align:left;font-size:12px;font-weight:600">Son Çalışma</th>'
+        + '<th style="padding:8px;text-align:left;font-size:12px;font-weight:600">Tamamlandı</th>'
+        + '<th style="padding:8px;text-align:left;font-size:12px;font-weight:600">Mesaj</th>'
+        + '<th style="padding:8px;text-align:left;font-size:12px;font-weight:600">Sonraki</th>'
+        + '<th style="padding:8px;text-align:left;font-size:12px;font-weight:600">Aralık</th>'
+        + '<th style="padding:8px;font-size:12px;font-weight:600"></th>'
+        + '</tr></thead>'
+        + '<tbody>' + jobRows + '</tbody>'
+        + '</table></div></div>';
+
+      /* ── Log retention card ── */
+      var lr = data.logRetention || {};
+      function fmtCleanDt(iso) {
+        if (!iso) return 'Hiç çalışmadı';
+        try { var d = new Date(iso); return d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return iso; }
+      }
+      var lrColor = (lr.totalCronLogs || 0) > 5000 ? '#ca8a04' : '#16a34a';
+      var retentionHtml = '<div style="margin-bottom:20px;border:1px solid hsl(var(--border));border-radius:10px;padding:16px;background:hsl(var(--card))">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+        + '<h3 style="margin:0;font-size:14px;font-weight:600">Cron Log Durumu</h3>'
+        + '<span style="font-size:11px;color:hsl(var(--muted-foreground))">Saklama: ' + (lr.retentionDays || 30) + ' gün · Job başına min ' + (lr.keepPerJob || 50) + ' kayıt</span>'
+        + '</div>'
+        + '<div style="display:flex;gap:12px;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:130px;padding:12px 14px;border:1px solid hsl(var(--border));border-radius:8px">'
+        + '<p style="margin:0;font-size:11px;color:hsl(var(--muted-foreground))">Toplam Kayıt</p>'
+        + '<p style="margin:5px 0 0;font-size:24px;font-weight:700;color:' + lrColor + '">' + (lr.totalCronLogs || 0) + '</p></div>'
+        + '<div style="flex:2;min-width:180px;padding:12px 14px;border:1px solid hsl(var(--border));border-radius:8px">'
+        + '<p style="margin:0;font-size:11px;color:hsl(var(--muted-foreground))">Son Temizlik</p>'
+        + '<p style="margin:5px 0 0;font-size:13px;font-weight:600">' + fmtCleanDt(lr.lastCleanupAt) + '</p>'
+        + (lr.lastCleanupStatus === 'success'
+            ? '<p style="margin:3px 0 0;font-size:12px;color:#16a34a">✓ Başarılı · ' + (lr.lastCleanupDeleted != null ? lr.lastCleanupDeleted + ' kayıt silindi' : '') + '</p>'
+            : lr.lastCleanupStatus === 'error'
+              ? '<p style="margin:3px 0 0;font-size:12px;color:#dc2626">✕ Hata</p>'
+              : '<p style="margin:3px 0 0;font-size:12px;color:hsl(var(--muted-foreground))">—</p>')
+        + '</div>'
+        + '<div style="flex:1;min-width:130px;padding:12px 14px;border:1px solid hsl(var(--border));border-radius:8px">'
+        + '<p style="margin:0;font-size:11px;color:hsl(var(--muted-foreground))">Sonraki Temizlik</p>'
+        + (function () { var jj = jobs['cron_log_cleanup']; return jj && jj.nextRun ? '<p style="margin:5px 0 0;font-size:13px;font-weight:600">' + fmtNext(jj.nextRun) + '</p>' : '<p style="margin:5px 0 0;font-size:13px;color:hsl(var(--muted-foreground))">—</p>'; })()
+        + '</div></div></div>';
+
+      /* ── Queue + concurrency ── */
+      var qColor = q.length > 0 ? '#ca8a04' : '#16a34a';
+      var queueHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">'
+        + '<div style="border:1px solid hsl(var(--border));border-radius:10px;padding:16px;background:hsl(var(--card))">'
+        + '<h3 style="margin:0 0 12px;font-size:14px;font-weight:600">Queue Durumu</h3>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        + '<div style="padding:10px;border:1px solid hsl(var(--border));border-radius:8px"><p style="margin:0;font-size:11px;color:hsl(var(--muted-foreground))">Queue Length</p><p style="margin:4px 0 0;font-size:22px;font-weight:700;color:' + qColor + '">' + (q.length || 0) + '</p></div>'
+        + '<div style="padding:10px;border:1px solid hsl(var(--border));border-radius:8px"><p style="margin:0;font-size:11px;color:hsl(var(--muted-foreground))">Active Count</p><p style="margin:4px 0 0;font-size:22px;font-weight:700">' + (q.activeCount || 0) + '</p></div>'
+        + '</div>'
+        + '<div style="margin-top:12px"><p style="margin:0 0 4px;font-size:12px;font-weight:500">Çalışan Jobs</p><p style="margin:0;font-size:13px;color:' + (q.running && q.running.length ? '#16a34a' : 'hsl(var(--muted-foreground))') + '">' + esc((q.running || []).join(', ') || 'Yok') + '</p></div>'
+        + '<div style="margin-top:8px"><p style="margin:0 0 4px;font-size:12px;font-weight:500">Bekleyen Jobs</p><p style="margin:0;font-size:13px;color:' + (q.pending && q.pending.length ? '#ca8a04' : 'hsl(var(--muted-foreground))') + '">' + esc((q.pending || []).join(', ') || 'Yok') + '</p></div>'
+        + '</div>'
+        + '<div style="border:1px solid hsl(var(--border));border-radius:10px;padding:16px;background:hsl(var(--card))">'
+        + '<h3 style="margin:0 0 12px;font-size:14px;font-weight:600">Concurrency</h3>'
+        + concurrencyRow('HTTP', cc.http || {}) + '<div style="height:12px"></div>' + concurrencyRow('AI (Gemini)', cc.ai || {})
+        + '</div></div>';
+
+      /* ── Assemble ── */
+      inner.innerHTML = statsHtml + jobsHtml + retentionHtml + queueHtml;
+    }).catch(function (err) {
+      var inner2 = document.getElementById('__ss_sched_inner__');
+      if (inner2) inner2.innerHTML = '<p style="color:#ef4444;padding:20px">Bağlantı hatası</p>';
+    });
+  }
+
+  window.__ssSchedRun__ = function (jobName) {
+    if (!confirm(jobName + ' jobını manuel olarak başlatmak istiyor musunuz?')) return;
+    apiFetch('/api/admin/scheduler/run/' + jobName, { method: 'POST' })
+      .then(function (r) {
+        if (r.success) { toast('✓ ' + jobName + ' kuyruğa eklendi', true); setTimeout(renderScheduler, 800); }
+        else toast(r.error || 'Hata', false);
+      }).catch(function () { toast('Bağlantı hatası', false); });
+  };
+
+  function buildPanel() {
+    var div = document.createElement('div');
+    div.id = PANEL_ID;
+    div.setAttribute('role', 'tabpanel');
+    div.style.display = 'none';
+    div.innerHTML = '<style>@keyframes __ss_pulse { 0%,100%{opacity:1} 50%{opacity:.4} }</style>'
+      + '<div style="margin-top:8px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+      + '<div><h2 style="margin:0;font-size:16px;font-weight:700">Scheduler Durumu</h2>'
+      + '<p style="margin:3px 0 0;font-size:12px;color:hsl(var(--muted-foreground))">Her 10 saniyede otomatik güncellenir</p></div>'
+      + '<button onclick="__ssSchedRefresh__()" style="padding:7px 14px;font-size:12px;font-weight:500;border-radius:6px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));cursor:pointer">↻ Yenile</button>'
+      + '</div>'
+      + '<div id="__ss_sched_inner__"><p style="color:hsl(var(--muted-foreground));padding:20px 0">Yükleniyor…</p></div>'
+      + '</div>';
+    return div;
+  }
+
+  window.__ssSchedRefresh__ = function () { renderScheduler(); toast('Güncellendi', true); };
+
+  function startAutoRefresh() {
+    if (_refreshTimer) clearInterval(_refreshTimer);
+    _refreshTimer = setInterval(function () {
+      var panel = document.getElementById(PANEL_ID);
+      if (panel && panel.style.display !== 'none') renderScheduler();
+    }, 10000);
+  }
+
+  function activate() {
+    document.querySelectorAll('[role="tablist"] [role="tab"]').forEach(function (b) {
+      if (b.id !== BTN_ID) b.setAttribute('data-state', 'inactive');
+    });
+    var btn = document.getElementById(BTN_ID);
+    if (btn) btn.setAttribute('data-state', 'active');
+    document.querySelectorAll('[role="tabpanel"]').forEach(function (p) {
+      if (p.id !== PANEL_ID) p.style.display = 'none';
+    });
+    var panel = document.getElementById(PANEL_ID);
+    if (panel) { panel.style.display = 'block'; renderScheduler(); startAutoRefresh(); }
+  }
+
+  function deactivate() {
+    if (_refreshTimer) { clearInterval(_refreshTimer); _refreshTimer = null; }
+    var btn = document.getElementById(BTN_ID);
+    if (btn) btn.setAttribute('data-state', 'inactive');
+    var panel = document.getElementById(PANEL_ID);
+    if (panel) panel.style.display = 'none';
+    document.querySelectorAll('[role="tabpanel"]').forEach(function (p) {
+      if (p.id !== PANEL_ID) p.style.display = '';
+    });
+  }
+
+  function inject(tabList) {
+    if (document.getElementById(BTN_ID)) return;
+    var refBtn = tabList.querySelector('[role="tab"]');
+    var btnClass = refBtn ? refBtn.className : '';
+    var btn = document.createElement('button');
+    btn.id = BTN_ID;
+    btn.type = 'button';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('data-state', 'inactive');
+    btn.className = btnClass;
+    btn.textContent = '⏱ Scheduler';
+    btn.addEventListener('click', activate);
+    tabList.appendChild(btn);
+    /* Attach deactivate to all real tabs (not our custom buttons) */
+    tabList.querySelectorAll('[role="tab"]').forEach(function (realBtn) {
+      if (realBtn.id !== BTN_ID && realBtn.id !== PROMPT_BTN_ID)
+        realBtn.addEventListener('click', deactivate);
+    });
+    /* Append panel ONLY if it doesn't already exist */
+    if (!document.getElementById(PANEL_ID)) {
+      var tabsRoot = tabList.parentElement && tabList.parentElement.parentElement;
+      if (tabsRoot) tabsRoot.appendChild(buildPanel());
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     KEY CHANGE: tryInject anchors on the Promptlar button.
+     This guarantees:
+       1. The tablist is fully rendered (Promptlar already succeeded).
+       2. We get the EXACT same tablist element Promptlar used.
+       3. No simultaneous React-mutation race condition.
+  ───────────────────────────────────────────────────────────────────────── */
+  function tryInject() {
+    var promptBtn = document.getElementById(PROMPT_BTN_ID);
+    if (!promptBtn) return;                        /* Wait for Promptlar first */
+    var tl = promptBtn.parentElement;
+    if (!tl) return;
+    if (!document.getElementById(BTN_ID)) inject(tl);
+    if (!document.getElementById(PANEL_ID)) {
+      var tabsRoot = tl.parentElement && tl.parentElement.parentElement;
+      if (tabsRoot) tabsRoot.appendChild(buildPanel());
+    }
+  }
+
+  var _observer = new MutationObserver(function () { tryInject(); });
+  var _retryTimer = null;
+
+  function startObserving() {
+    _observer.observe(document.body, { childList: true, subtree: true });
+    setTimeout(tryInject, 300);
+    _retryTimer = setInterval(tryInject, 600);
+    setTimeout(function () {
+      clearInterval(_retryTimer);
+      setInterval(tryInject, 5000);
+    }, 60000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startObserving);
+  } else {
+    startObserving();
+  }
+})();
+</script>
+
+  
+<script>
+(function () {
+  'use strict';
+
+  /* ---- shared helpers (also defined in scheduler tab, safe to redefine) ---- */
+  function token() { return sessionStorage.getItem('admin_token') || ''; }
+  function apiFetch(url, opts) {
+    opts = opts || {};
+    return fetch(url, Object.assign({}, opts, {
+      headers: Object.assign({ 'x-admin-token': token(), 'Content-Type': 'application/json' }, opts.headers || {})
+    })).then(function (r) { return r.json(); });
+  }
+  function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function toast(msg, ok) {
+    var el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:opacity .3s;color:#fff;background:' + (ok ? '#22c55e' : '#ef4444');
+    document.body.appendChild(el);
+    setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 320); }, 2800);
+  }
+
+  /* ---- state ---- */
+  var _scState = {
+    job: null,   /* null = tümü */
+    offset: 0,
+    limit: 20,
+    total: 0,
+    logs: []
+  };
+
+  var JOB_FILTER_LABELS = [
+    { key: null,                 label: 'Tümü' },
+    { key: 'haberler',           label: 'Haberler' },
+    { key: 'personel',           label: 'Personel' },
+    { key: 'atamalar',           label: 'Atamalar' },
+    { key: 'sinav_takvimi',      label: 'Sınav Takvimi' },
+    { key: 'cleanup_appointments', label: 'Temizlik' },
+    { key: 'cron_log_cleanup',   label: 'Log Temizliği' }
+  ];
+
+  function fmtDur(ms) {
+    if (ms == null) return '—';
+    if (ms < 1000) return ms + 'ms';
+    if (ms < 60000) return (ms / 1000).toFixed(1) + 'sn';
+    var m = Math.floor(ms / 60000);
+    var s = Math.floor((ms % 60000) / 1000);
+    return m + 'dk ' + s + 'sn';
+  }
+
+  function fmtDt(iso) {
+    if (!iso) return '—';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'2-digit' })
+        + ' ' + d.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    } catch(e) { return iso; }
+  }
+
+  var JOB_NAMES = {
+    haberler: 'Haberler',
+    haberler_manuel: 'Haberler ★',
+    personel: 'Personel',
+    personel_manuel: 'Personel ★',
+    atamalar: 'Atamalar',
+    atamalar_manuel: 'Atamalar ★',
+    sinav_takvimi: 'Sınav Tak.',
+    sinav_takvimi_manuel: 'Sınav Tak. ★',
+    cleanup_appointments: 'Temizlik',
+    cleanup_jobs: 'Temizlik',
+    cron_log_cleanup: 'Log Temizliği'
+  };
+
+  function statusBadge(s) {
+    if (s === 'success') return '<span style="display:inline-block;padding:2px 9px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(34,197,94,.12);color:#16a34a">✓ Başarılı</span>';
+    if (s === 'error')   return '<span style="display:inline-block;padding:2px 9px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(239,68,68,.12);color:#dc2626">✕ Hata</span>';
+    if (s === 'running') return '<span style="display:inline-block;padding:2px 9px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(59,130,246,.12);color:#2563eb">↻ Çalışıyor</span>';
+    if (s === 'warning') return '<span style="display:inline-block;padding:2px 9px;border-radius:9999px;font-size:11px;font-weight:600;background:rgba(234,179,8,.12);color:#ca8a04">⚠ Uyarı</span>';
+    return '<span style="display:inline-block;padding:2px 9px;border-radius:9999px;font-size:11px;font-weight:600;background:hsl(var(--muted));color:hsl(var(--muted-foreground))">' + esc(s||'—') + '</span>';
+  }
+
+  /* ---- parse "işlendi: X" from message ---- */
+  function parseProcessed(msg) {
+    if (!msg) return '—';
+    var m = msg.match(/i\u015Flendi:\s*(\d+)/);
+    if (m) return m[1];
+    var n = msg.match(/yeni:\s*(\d+)/);
+    return n ? n[1] : '—';
+  }
+
+  /* ---- fetch + append ---- */
+  function fetchLogs(reset) {
+    if (reset) { _scState.offset = 0; _scState.logs = []; }
+    var params = '?limit=' + _scState.limit + '&offset=' + _scState.offset;
+    if (_scState.job) params += '&job=' + encodeURIComponent(_scState.job);
+    return apiFetch('/api/admin/cron-logs' + params).then(function (data) {
+      if (!data || data.error) { toast(data && data.error ? data.error : 'Veri alınamadı', false); return; }
+      _scState.total  = data.total || 0;
+      _scState.offset += (data.logs || []).length;
+      _scState.logs    = _scState.logs.concat(data.logs || []);
+      renderTable();
+    });
+  }
+
+  /* ---- render ---- */
+  function renderTable() {
+    var el = document.getElementById('__sc_log_table__');
+    if (!el) return;
+
+    if (_scState.logs.length === 0) {
+      el.innerHTML = '<tr><td colspan="6" style="padding:28px;text-align:center;color:hsl(var(--muted-foreground));font-size:13px">Kayıt bulunamadı</td></tr>';
+      updateFooter();
+      return;
+    }
+
+    el.innerHTML = _scState.logs.map(function (log) {
+      var name = JOB_NAMES[log.job_name] || log.job_name;
+      var isManuel = log.job_name.endsWith('_manuel');
+      var msgShort = (log.message || '').substring(0, 60) + ((log.message||'').length > 60 ? '…' : '');
+      return '<tr style="border-top:1px solid hsl(var(--border));transition:background .15s" onmouseover="this.style.background=\'hsl(var(--muted))\'" onmouseout="this.style.background=\'\'">'
+        + '<td style="padding:9px 10px;font-size:12px;white-space:nowrap;color:hsl(var(--muted-foreground))">' + fmtDt(log.started_at) + '</td>'
+        + '<td style="padding:9px 10px;font-size:12px;white-space:nowrap;font-weight:' + (isManuel?'600':'400') + '">' + esc(name) + '</td>'
+        + '<td style="padding:9px 10px">' + statusBadge(log.status) + '</td>'
+        + '<td style="padding:9px 10px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:hsl(var(--muted-foreground))">' + fmtDur(log.duration_ms) + '</td>'
+        + '<td style="padding:9px 10px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">' + parseProcessed(log.message) + '</td>'
+        + '<td style="padding:9px 10px;font-size:12px;max-width:220px"><span title="' + esc(log.message||'') + '" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help">' + esc(msgShort) + '</span></td>'
+        + '</tr>';
+    }).join('');
+    updateFooter();
+  }
+
+  function updateFooter() {
+    var f = document.getElementById('__sc_log_footer__');
+    if (!f) return;
+    var shown = _scState.logs.length;
+    var total = _scState.total;
+    var hasMore = shown < total;
+    f.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px">'
+      + '<span style="font-size:12px;color:hsl(var(--muted-foreground))">' + shown + ' / ' + total + ' kayıt</span>'
+      + (hasMore
+          ? '<button onclick="__scLoadMore__()" style="padding:5px 14px;font-size:12px;border-radius:6px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));cursor:pointer">Daha Fazla Yükle (' + (total - shown) + ')</button>'
+          : '<span style="font-size:12px;color:hsl(var(--muted-foreground))">Tümü gösteriliyor</span>')
+      + '</div>';
+  }
+
+  /* ---- filter buttons ---- */
+  function renderFilters() {
+    var bar = document.getElementById('__sc_filter_bar__');
+    if (!bar) return;
+    bar.innerHTML = JOB_FILTER_LABELS.map(function (f) {
+      var active = _scState.job === f.key;
+      return '<button onclick="__scSetFilter__(' + JSON.stringify(f.key) + ')" style="padding:5px 13px;font-size:12px;border-radius:6px;border:1px solid ' + (active?'hsl(var(--primary))':'hsl(var(--border))') + ';background:' + (active?'hsl(var(--primary))':'transparent') + ';color:' + (active?'hsl(var(--primary-foreground))':'hsl(var(--foreground))') + ';cursor:pointer;font-weight:' + (active?'600':'400') + '">' + esc(f.label) + '</button>';
+    }).join('');
+  }
+
+  /* ---- public callbacks ---- */
+  window.__scSetFilter__ = function(job) {
+    _scState.job = job;
+    renderFilters();
+    fetchLogs(true);
+  };
+
+  window.__scLoadMore__ = function() {
+    fetchLogs(false);
+  };
+
+  window.__scRefresh__ = function() {
+    fetchLogs(true).then(function() { toast('Yenilendi ✓', true); });
+  };
+
+  window.__scLoad100__ = function() {
+    _scState.limit = 100;
+    fetchLogs(true).then(function() {
+      _scState.limit = 20;  /* reset for future load-more */
+      toast('Son 100 kayıt yüklendi', true);
+    });
+  };
+
+  window.__scClearLogs__ = function() {
+    var label = _scState.job
+      ? (JOB_FILTER_LABELS.find(function(f){return f.key===_scState.job;})||{label:_scState.job}).label
+      : 'tüm job\'ların';
+    if (!confirm(label + ' log kayıtları temizlenecek (son 5 kayıt korunur). Emin misiniz?')) return;
+    var url = '/api/admin/cron-logs' + (_scState.job ? '?job=' + encodeURIComponent(_scState.job) : '');
+    apiFetch(url, { method: 'DELETE' }).then(function(r) {
+      if (r.success) { toast(r.deleted + ' kayıt silindi', true); fetchLogs(true); }
+      else toast(r.error || 'Hata', false);
+    }).catch(function() { toast('Bağlantı hatası', false); });
+  };
+
+  /* ── inject into scheduler panel ── */
+  function tryInjectIntoScheduler() {
+    var panel = document.getElementById('__ss_sched_panel__');
+    if (!panel || document.getElementById('__sc_section__')) return;
+
+    var section = document.createElement('div');
+    section.id = '__sc_section__';
+    section.innerHTML =
+      '<div style="border:1px solid hsl(var(--border));border-radius:10px;overflow:hidden;margin-top:4px">'
+      /* header */
+      + '<div style="padding:13px 16px;background:hsl(var(--card));border-bottom:1px solid hsl(var(--border));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+      + '<h3 style="margin:0;font-size:14px;font-weight:600">Son Çalışmalar</h3>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      + '<button onclick="__scRefresh__()" style="padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));cursor:pointer">↻ Yenile</button>'
+      + '<button onclick="__scLoad100__()" style="padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));cursor:pointer">Son 100 Kaydı Gör</button>'
+      + '<button onclick="__scClearLogs__()" style="padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid rgba(239,68,68,.4);background:transparent;color:#dc2626;cursor:pointer">🗑 Logları Temizle</button>'
+      + '</div></div>'
+      /* filters */
+      + '<div style="padding:10px 14px;background:hsl(var(--muted)/0.4);border-bottom:1px solid hsl(var(--border));display:flex;gap:6px;flex-wrap:wrap" id="__sc_filter_bar__"></div>'
+      /* table */
+      + '<div style="overflow-x:auto">'
+      + '<table style="width:100%;border-collapse:collapse;background:hsl(var(--card))">'
+      + '<thead><tr style="background:hsl(var(--muted))">'
+      + '<th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600;white-space:nowrap">Tarih / Saat</th>'
+      + '<th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600">Job</th>'
+      + '<th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600">Durum</th>'
+      + '<th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600">Süre</th>'
+      + '<th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:600">İşlenen</th>'
+      + '<th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:600">Mesaj</th>'
+      + '</tr></thead>'
+      + '<tbody id="__sc_log_table__">'
+      + '<tr><td colspan="6" style="padding:28px;text-align:center;color:hsl(var(--muted-foreground));font-size:13px">Yükleniyor…</td></tr>'
+      + '</tbody>'
+      + '</table></div>'
+      + '<div id="__sc_log_footer__" style="border-top:1px solid hsl(var(--border));background:hsl(var(--card))"></div>'
+      + '</div>';
+
+    panel.querySelector('#__ss_sched_inner__') && panel.appendChild(section);
+    renderFilters();
+    fetchLogs(true);
+  }
+
+  /* watch for scheduler panel to appear */
+  var _scObs = new MutationObserver(function() {
+    var panel = document.getElementById('__ss_sched_panel__');
+    if (panel && panel.style.display !== 'none') tryInjectIntoScheduler();
+  });
+
+  /* also re-inject (fetch) every time scheduler panel becomes visible */
+  var _origActivate = window.__ssSchedActivate__;
+  (function patchActivate() {
+    var origBtn = null;
+    var _check = setInterval(function() {
+      var btn = document.getElementById('__ss_sched_tab__');
+      if (!btn || btn === origBtn) return;
+      origBtn = btn;
+      btn.addEventListener('click', function() {
+        setTimeout(function() { tryInjectIntoScheduler(); }, 100);
+      });
+    }, 500);
+  })();
+
+  function start() {
+    _scObs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+    var panel = document.getElementById('__ss_sched_panel__');
+    if (panel && panel.style.display !== 'none') tryInjectIntoScheduler();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
+
+  </body>
+</html>
